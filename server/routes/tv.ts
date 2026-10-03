@@ -7,6 +7,7 @@ import { MediaType } from '@server/constants/media';
 import { getRepository } from '@server/datasource';
 import Media from '@server/entity/Media';
 import { Watchlist } from '@server/entity/Watchlist';
+import { saveRatingsQuietly } from '@server/lib/ratingCache';
 import logger from '@server/logger';
 import { mapTvResult } from '@server/models/Search';
 import { mapSeasonWithEpisodes, mapTvDetails } from '@server/models/Tv';
@@ -202,6 +203,13 @@ tvRoutes.get('/:id/ratings', async (req, res, next) => {
       tv.name,
       tv.first_air_date ? Number(tv.first_air_date.slice(0, 4)) : undefined
     );
+
+    saveRatingsQuietly({
+      tmdbId: tv.id,
+      mediaType: MediaType.TV,
+      imdbId: tv.external_ids?.imdb_id || null,
+      rt: rtratings ?? null,
+    });
 
     if (!rtratings) {
       return next({

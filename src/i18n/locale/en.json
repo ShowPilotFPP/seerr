@@ -990,6 +990,7 @@
   "components.Settings.SettingsJobsCache.plex-watchlist-sync": "Plex Watchlist Sync",
   "components.Settings.SettingsJobsCache.process": "Process",
   "components.Settings.SettingsJobsCache.process-blocklisted-tags": "Process Blocklisted Tags",
+  "components.Settings.SettingsJobsCache.ratings-sync": "Ratings Sync",
   "components.Settings.SettingsJobsCache.radarr-scan": "Radarr Scan",
   "components.Settings.SettingsJobsCache.runnow": "Run Now",
   "components.Settings.SettingsJobsCache.size": "Size",

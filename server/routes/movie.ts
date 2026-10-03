@@ -6,6 +6,7 @@ import { MediaType } from '@server/constants/media';
 import { getRepository } from '@server/datasource';
 import Media from '@server/entity/Media';
 import { Watchlist } from '@server/entity/Watchlist';
+import { saveRatingsQuietly } from '@server/lib/ratingCache';
 import logger from '@server/logger';
 import { mapMovieDetails } from '@server/models/Movie';
 import { mapMovieResult } from '@server/models/Search';
@@ -212,6 +213,14 @@ movieRoutes.get('/:id/ratingscombined', async (req, res, next) => {
     if (movie.imdb_id) {
       imdbRatings = await imdbApi.getMovieRatings(movie.imdb_id);
     }
+
+    saveRatingsQuietly({
+      tmdbId: movie.id,
+      mediaType: MediaType.MOVIE,
+      imdbId: movie.imdb_id || null,
+      rt: rtratings ?? null,
+      imdb: movie.imdb_id ? (imdbRatings ?? null) : null,
+    });
 
     if (!rtratings && !imdbRatings) {
       return next({

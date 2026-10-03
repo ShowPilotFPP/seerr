@@ -1,5 +1,6 @@
 import { MediaServerType } from '@server/constants/server';
 import blocklistedTagsProcessor from '@server/job/blocklistedTagsProcessor';
+import ratingsSync from '@server/job/ratingsSync';
 import availabilitySync from '@server/lib/availabilitySync';
 import downloadTracker from '@server/lib/downloadtracker';
 import ImageProxy from '@server/lib/imageproxy';
@@ -257,6 +258,22 @@ export const startJobs = (): void => {
     }),
     running: () => blocklistedTagsProcessor.status().running,
     cancelFn: () => blocklistedTagsProcessor.cancel(),
+  });
+
+  scheduledJobs.push({
+    id: 'ratings-sync',
+    name: 'Ratings Sync',
+    type: 'process',
+    interval: 'days',
+    cronSchedule: jobs['ratings-sync'].schedule,
+    job: schedule.scheduleJob(jobs['ratings-sync'].schedule, () => {
+      logger.info('Starting scheduled job: Ratings Sync', {
+        label: 'Jobs',
+      });
+      ratingsSync.run();
+    }),
+    running: () => ratingsSync.status().running,
+    cancelFn: () => ratingsSync.cancel(),
   });
 
   logger.info('Scheduled jobs loaded', { label: 'Jobs' });
