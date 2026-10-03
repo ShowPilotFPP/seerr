@@ -45,6 +45,10 @@ const messages = defineMessages('components.Discover.FilterSlideover', {
   voteCount: 'Number of votes between {minValue} and {maxValue}',
   status: 'Status',
   certification: 'Content Rating',
+  rtCriticsScore: 'Rotten Tomatoes Critics Score',
+  rtAudienceScore: 'Rotten Tomatoes Audience Score',
+  imdbRating: 'IMDb Rating',
+  percentRangeText: 'Scores between {minValue}% and {maxValue}%',
 });
 
 type FilterSlideoverProps = {
@@ -294,6 +298,115 @@ const FilterSlideover = ({
             })}
           />
         </div>
+        <span className="text-lg font-semibold">
+          {intl.formatMessage(messages.rtCriticsScore)}
+        </span>
+        <div className="relative z-0">
+          <MultiRangeSlider
+            min={0}
+            max={100}
+            defaultMinValue={
+              currentFilters.rtCriticsGte
+                ? Number(currentFilters.rtCriticsGte)
+                : undefined
+            }
+            defaultMaxValue={
+              currentFilters.rtCriticsLte
+                ? Number(currentFilters.rtCriticsLte)
+                : undefined
+            }
+            onUpdateMin={(min) => {
+              updateQueryParams(
+                'rtCriticsGte',
+                min !== 0 ? min.toString() : undefined
+              );
+            }}
+            onUpdateMax={(max) => {
+              updateQueryParams(
+                'rtCriticsLte',
+                max !== 100 ? max.toString() : undefined
+              );
+            }}
+            subText={intl.formatMessage(messages.percentRangeText, {
+              minValue: currentFilters.rtCriticsGte ?? 0,
+              maxValue: currentFilters.rtCriticsLte ?? 100,
+            })}
+          />
+        </div>
+        <span className="text-lg font-semibold">
+          {intl.formatMessage(messages.rtAudienceScore)}
+        </span>
+        <div className="relative z-0">
+          <MultiRangeSlider
+            min={0}
+            max={100}
+            defaultMinValue={
+              currentFilters.rtAudienceGte
+                ? Number(currentFilters.rtAudienceGte)
+                : undefined
+            }
+            defaultMaxValue={
+              currentFilters.rtAudienceLte
+                ? Number(currentFilters.rtAudienceLte)
+                : undefined
+            }
+            onUpdateMin={(min) => {
+              updateQueryParams(
+                'rtAudienceGte',
+                min !== 0 ? min.toString() : undefined
+              );
+            }}
+            onUpdateMax={(max) => {
+              updateQueryParams(
+                'rtAudienceLte',
+                max !== 100 ? max.toString() : undefined
+              );
+            }}
+            subText={intl.formatMessage(messages.percentRangeText, {
+              minValue: currentFilters.rtAudienceGte ?? 0,
+              maxValue: currentFilters.rtAudienceLte ?? 100,
+            })}
+          />
+        </div>
+        {type === 'movie' && (
+          <>
+            <span className="text-lg font-semibold">
+              {intl.formatMessage(messages.imdbRating)}
+            </span>
+            <div className="relative z-0">
+              <MultiRangeSlider
+                min={1}
+                max={10}
+                defaultMinValue={
+                  currentFilters.imdbRatingGte
+                    ? Number(currentFilters.imdbRatingGte)
+                    : undefined
+                }
+                defaultMaxValue={
+                  currentFilters.imdbRatingLte
+                    ? Number(currentFilters.imdbRatingLte)
+                    : undefined
+                }
+                onUpdateMin={(min) => {
+                  updateQueryParams(
+                    'imdbRatingGte',
+                    min !== 1 ? min.toString() : undefined
+                  );
+                }}
+                onUpdateMax={(max) => {
+                  updateQueryParams(
+                    'imdbRatingLte',
+                    max !== 10 ? max.toString() : undefined
+                  );
+                }}
+                subText={intl.formatMessage(messages.ratingText, {
+                  minValue: currentFilters.imdbRatingGte ?? 1,
+                  maxValue: currentFilters.imdbRatingLte ?? 10,
+                })}
+              />
+            </div>
+          </>
+        )}
         <span className="text-lg font-semibold">
           {intl.formatMessage(messages.tmdbuservotecount)}
         </span>

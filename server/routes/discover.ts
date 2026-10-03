@@ -13,6 +13,7 @@ import type {
   GenreSliderItem,
   WatchlistResponse,
 } from '@server/interfaces/api/discoverInterfaces';
+import { discoverWithRatingFilter } from '@server/lib/ratingFilter';
 import { getSettings } from '@server/lib/settings';
 import logger from '@server/logger';
 import { mapProductionCompany } from '@server/models/Movie';
@@ -88,6 +89,12 @@ const QueryFilterOptions = z.object({
   certificationLte: z.coerce.string().optional(),
   certificationCountry: z.coerce.string().optional(),
   certificationMode: z.enum(['exact', 'range']).optional(),
+  rtCriticsGte: z.coerce.string().optional(),
+  rtCriticsLte: z.coerce.string().optional(),
+  rtAudienceGte: z.coerce.string().optional(),
+  rtAudienceLte: z.coerce.string().optional(),
+  imdbRatingGte: z.coerce.string().optional(),
+  imdbRatingLte: z.coerce.string().optional(),
 });
 
 export type FilterOptions = z.infer<typeof QueryFilterOptions>;
@@ -110,34 +117,39 @@ discoverRoutes.get('/movies', async (req, res, next) => {
     const keywords = query.keywords;
     const excludeKeywords = query.excludeKeywords;
 
-    const data = await tmdb.getDiscoverMovies({
-      page: Number(query.page),
-      sortBy: query.sortBy,
-      language: req.locale ?? query.language,
-      originalLanguage: query.language,
-      genre: query.genre,
-      studio: query.studio,
-      primaryReleaseDateLte: query.primaryReleaseDateLte
-        ? new Date(query.primaryReleaseDateLte).toISOString().split('T')[0]
-        : undefined,
-      primaryReleaseDateGte: query.primaryReleaseDateGte
-        ? new Date(query.primaryReleaseDateGte).toISOString().split('T')[0]
-        : undefined,
-      keywords,
-      excludeKeywords,
-      withRuntimeGte: query.withRuntimeGte,
-      withRuntimeLte: query.withRuntimeLte,
-      voteAverageGte: query.voteAverageGte,
-      voteAverageLte: query.voteAverageLte,
-      voteCountGte: query.voteCountGte,
-      voteCountLte: query.voteCountLte,
-      watchProviders: query.watchProviders,
-      watchRegion: query.watchRegion,
-      certification: query.certification,
-      certificationGte: query.certificationGte,
-      certificationLte: query.certificationLte,
-      certificationCountry: query.certificationCountry,
-    });
+    const data = await discoverWithRatingFilter(
+      query,
+      MediaType.MOVIE,
+      (page) =>
+        tmdb.getDiscoverMovies({
+          page,
+          sortBy: query.sortBy,
+          language: req.locale ?? query.language,
+          originalLanguage: query.language,
+          genre: query.genre,
+          studio: query.studio,
+          primaryReleaseDateLte: query.primaryReleaseDateLte
+            ? new Date(query.primaryReleaseDateLte).toISOString().split('T')[0]
+            : undefined,
+          primaryReleaseDateGte: query.primaryReleaseDateGte
+            ? new Date(query.primaryReleaseDateGte).toISOString().split('T')[0]
+            : undefined,
+          keywords,
+          excludeKeywords,
+          withRuntimeGte: query.withRuntimeGte,
+          withRuntimeLte: query.withRuntimeLte,
+          voteAverageGte: query.voteAverageGte,
+          voteAverageLte: query.voteAverageLte,
+          voteCountGte: query.voteCountGte,
+          voteCountLte: query.voteCountLte,
+          watchProviders: query.watchProviders,
+          watchRegion: query.watchRegion,
+          certification: query.certification,
+          certificationGte: query.certificationGte,
+          certificationLte: query.certificationLte,
+          certificationCountry: query.certificationCountry,
+        })
+    );
 
     const media = await Media.getRelatedMedia(
       req.user,
@@ -167,6 +179,7 @@ discoverRoutes.get('/movies', async (req, res, next) => {
       page: data.page,
       totalPages: data.total_pages,
       totalResults: data.total_results,
+      ...(data.ratingFiltered ? { ratingFiltered: true } : {}),
       keywords: keywordData,
       results: data.results.map((result) =>
         mapMovieResult(
@@ -422,35 +435,37 @@ discoverRoutes.get('/tv', async (req, res, next) => {
     const query = TvApiQuerySchema.parse(req.query);
     const keywords = query.keywords;
     const excludeKeywords = query.excludeKeywords;
-    const data = await tmdb.getDiscoverTv({
-      page: Number(query.page),
-      sortBy: query.sortBy,
-      language: req.locale ?? query.language,
-      genre: query.genre,
-      network: query.network ? Number(query.network) : undefined,
-      firstAirDateLte: query.firstAirDateLte
-        ? new Date(query.firstAirDateLte).toISOString().split('T')[0]
-        : undefined,
-      firstAirDateGte: query.firstAirDateGte
-        ? new Date(query.firstAirDateGte).toISOString().split('T')[0]
-        : undefined,
-      originalLanguage: query.language,
-      keywords,
-      excludeKeywords,
-      withRuntimeGte: query.withRuntimeGte,
-      withRuntimeLte: query.withRuntimeLte,
-      voteAverageGte: query.voteAverageGte,
-      voteAverageLte: query.voteAverageLte,
-      voteCountGte: query.voteCountGte,
-      voteCountLte: query.voteCountLte,
-      watchProviders: query.watchProviders,
-      watchRegion: query.watchRegion,
-      withStatus: query.status,
-      certification: query.certification,
-      certificationGte: query.certificationGte,
-      certificationLte: query.certificationLte,
-      certificationCountry: query.certificationCountry,
-    });
+    const data = await discoverWithRatingFilter(query, MediaType.TV, (page) =>
+      tmdb.getDiscoverTv({
+        page,
+        sortBy: query.sortBy,
+        language: req.locale ?? query.language,
+        genre: query.genre,
+        network: query.network ? Number(query.network) : undefined,
+        firstAirDateLte: query.firstAirDateLte
+          ? new Date(query.firstAirDateLte).toISOString().split('T')[0]
+          : undefined,
+        firstAirDateGte: query.firstAirDateGte
+          ? new Date(query.firstAirDateGte).toISOString().split('T')[0]
+          : undefined,
+        originalLanguage: query.language,
+        keywords,
+        excludeKeywords,
+        withRuntimeGte: query.withRuntimeGte,
+        withRuntimeLte: query.withRuntimeLte,
+        voteAverageGte: query.voteAverageGte,
+        voteAverageLte: query.voteAverageLte,
+        voteCountGte: query.voteCountGte,
+        voteCountLte: query.voteCountLte,
+        watchProviders: query.watchProviders,
+        watchRegion: query.watchRegion,
+        withStatus: query.status,
+        certification: query.certification,
+        certificationGte: query.certificationGte,
+        certificationLte: query.certificationLte,
+        certificationCountry: query.certificationCountry,
+      })
+    );
 
     const media = await Media.getRelatedMedia(
       req.user,
@@ -480,6 +495,7 @@ discoverRoutes.get('/tv', async (req, res, next) => {
       page: data.page,
       totalPages: data.total_pages,
       totalResults: data.total_results,
+      ...(data.ratingFiltered ? { ratingFiltered: true } : {}),
       keywords: keywordData,
       results: data.results.map((result) =>
         mapTvResult(

@@ -171,3 +171,61 @@ export const getCachedRatings = async (
 
   return new Map(rows.map((r) => [r.tmdbId, r]));
 };
+
+/* ------------------------------------------------------------------ */
+/* Background lookup queue                                             */
+/* ------------------------------------------------------------------ */
+
+const QUEUE_LIMIT = 1000;
+const QUEUE_CONCURRENCY = 2;
+const QUEUE_DELAY_MS = 300;
+
+const queue: { tmdbId: number; mediaType: MediaType }[] = [];
+const queued = new Set<string>();
+let activeWorkers = 0;
+
+const runWorker = async (): Promise<void> => {
+  activeWorkers++;
+  try {
+    let item = queue.shift();
+    while (item) {
+      try {
+        await fetchAndSaveRatings(item.tmdbId, item.mediaType);
+      } catch (e) {
+        logger.debug('Queued rating lookup failed', {
+          label: 'Rating Cache',
+          ...item,
+          errorMessage: e.message,
+        });
+      } finally {
+        queued.delete(`${item.mediaType}:${item.tmdbId}`);
+      }
+      await new Promise((r) => setTimeout(r, QUEUE_DELAY_MS));
+      item = queue.shift();
+    }
+  } finally {
+    activeWorkers--;
+  }
+};
+
+/**
+ * Look up ratings for these titles in the background (deduplicated,
+ * rate-limited). Returns immediately. Used by Discover so that titles
+ * missing from the cache are filled in for the next visit.
+ */
+export const queueRatingLookups = (
+  items: { tmdbId: number; mediaType: MediaType }[]
+): void => {
+  for (const item of items) {
+    const key = `${item.mediaType}:${item.tmdbId}`;
+    if (queued.has(key) || queue.length >= QUEUE_LIMIT) {
+      continue;
+    }
+    queued.add(key);
+    queue.push(item);
+  }
+
+  while (activeWorkers < QUEUE_CONCURRENCY && queue.length > 0) {
+    runWorker();
+  }
+};

@@ -115,6 +115,12 @@ export const QueryFilterOptions = z.object({
   certificationLte: z.string().optional(),
   certificationCountry: z.string().optional(),
   certificationMode: z.enum(['exact', 'range']).optional(),
+  rtCriticsGte: z.string().optional(),
+  rtCriticsLte: z.string().optional(),
+  rtAudienceGte: z.string().optional(),
+  rtAudienceLte: z.string().optional(),
+  imdbRatingGte: z.string().optional(),
+  imdbRatingLte: z.string().optional(),
 });
 
 export type FilterOptions = z.infer<typeof QueryFilterOptions>;
@@ -218,6 +224,19 @@ export const prepareFilterValues = (
     filterValues.certificationCountry = values.certificationCountry;
   }
 
+  for (const key of [
+    'rtCriticsGte',
+    'rtCriticsLte',
+    'rtAudienceGte',
+    'rtAudienceLte',
+    'imdbRatingGte',
+    'imdbRatingLte',
+  ] as const) {
+    if (values[key]) {
+      filterValues[key] = values[key];
+    }
+  }
+
   if (values.certificationMode) {
     filterValues.certificationMode = values.certificationMode;
   } else if (values.certification) {
@@ -268,6 +287,18 @@ export const countActiveFilters = (filterValues: FilterOptions): number => {
     delete clonedFilters.certificationGte;
     delete clonedFilters.certificationLte;
     delete clonedFilters.certificationCountry;
+  }
+
+  for (const [gte, lte] of [
+    ['rtCriticsGte', 'rtCriticsLte'],
+    ['rtAudienceGte', 'rtAudienceLte'],
+    ['imdbRatingGte', 'imdbRatingLte'],
+  ] as const) {
+    if (clonedFilters[gte] || clonedFilters[lte]) {
+      totalCount += 1;
+      delete clonedFilters[gte];
+      delete clonedFilters[lte];
+    }
   }
 
   delete clonedFilters.certificationMode;

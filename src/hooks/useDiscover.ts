@@ -14,6 +14,9 @@ export interface BaseSearchResult<T> {
   results: T[];
 }
 
+/** Stop auto-loading after this many filtered pages in a row find nothing. */
+const MAX_EMPTY_FILTERED_PAGES = 10;
+
 interface BaseMedia {
   id: number;
   mediaType: string;
@@ -153,12 +156,42 @@ const useDiscover = <
     });
   }
 
+  // Rating-filtered pages (Rotten Tomatoes / IMDb) scan several TMDB pages
+  // and can legitimately return fewer than 20 titles, or none at all, so
+  // they end on page count instead of result count.
+  const lastPage = data?.[data.length - 1] as
+    | (BaseSearchResult<T> & { ratingFiltered?: boolean })
+    | undefined;
+  const ratingFiltered = !!lastPage?.ratingFiltered;
+  let trailingEmptyPages = 0;
+  for (let i = (data?.length ?? 0) - 1; i >= 0; i--) {
+    if (data?.[i]?.results.length) {
+      break;
+    }
+    trailingEmptyPages++;
+  }
+
   const isEmpty = !isLoadingInitialData && titles?.length === 0;
-  const isReachingEnd =
-    isEmpty ||
-    (!!data && (data[data?.length - 1]?.results.length ?? 0) < 20) ||
-    (!!data && (data[data?.length - 1]?.totalResults ?? 0) <= size * 20) ||
-    (!!data && (data[data?.length - 1]?.totalResults ?? 0) < 41);
+  const isReachingEnd = ratingFiltered
+    ? (!!data && data.length >= (lastPage?.totalPages ?? 0)) ||
+      trailingEmptyPages >= MAX_EMPTY_FILTERED_PAGES
+    : isEmpty ||
+      (!!data && (data[data?.length - 1]?.results.length ?? 0) < 20) ||
+      (!!data && (data[data?.length - 1]?.totalResults ?? 0) <= size * 20) ||
+      (!!data && (data[data?.length - 1]?.totalResults ?? 0) < 41);
+
+  // An empty filtered page adds nothing to scroll past, so the infinite
+  // scroll would never ask for the next one. Keep going automatically.
+  useEffect(() => {
+    if (
+      ratingFiltered &&
+      !isValidating &&
+      !isReachingEnd &&
+      lastPage?.results.length === 0
+    ) {
+      setSize(size + 1);
+    }
+  }, [ratingFiltered, isValidating, isReachingEnd, lastPage, setSize, size]);
 
   useEffect(() => {
     if (error && titles.length) {
