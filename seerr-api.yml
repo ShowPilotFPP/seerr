@@ -5685,6 +5685,36 @@ paths:
             type: number
             example: 120
         - in: query
+          name: rtCriticsGte
+          schema:
+            type: number
+            example: 75
+        - in: query
+          name: rtCriticsLte
+          schema:
+            type: number
+            example: 100
+        - in: query
+          name: rtAudienceGte
+          schema:
+            type: number
+            example: 75
+        - in: query
+          name: rtAudienceLte
+          schema:
+            type: number
+            example: 100
+        - in: query
+          name: imdbRatingGte
+          schema:
+            type: number
+            example: 7
+        - in: query
+          name: imdbRatingLte
+          schema:
+            type: number
+            example: 10
+        - in: query
           name: voteAverageGte
           schema:
             type: number
@@ -6010,6 +6040,36 @@ paths:
           schema:
             type: number
             example: 120
+        - in: query
+          name: rtCriticsGte
+          schema:
+            type: number
+            example: 75
+        - in: query
+          name: rtCriticsLte
+          schema:
+            type: number
+            example: 100
+        - in: query
+          name: rtAudienceGte
+          schema:
+            type: number
+            example: 75
+        - in: query
+          name: rtAudienceLte
+          schema:
+            type: number
+            example: 100
+        - in: query
+          name: imdbRatingGte
+          schema:
+            type: number
+            example: 7
+        - in: query
+          name: imdbRatingLte
+          schema:
+            type: number
+            example: 10
         - in: query
           name: voteAverageGte
           schema:
